@@ -3,6 +3,12 @@ Examples for using the SDAccel XCL HAL library for interfacing RTL kernels.
 The XCL HAL library provides low-level access to designs running on the FPGA,
 such as reading and writing control/status registers directly from host code.
 
+## Examples in this repo
+So far there is only one example, reg2reg. This consists of:
+* a tiny "ALU" coded in Vivado HLS, reading from AXI lite registers and writing the result back to AXI lite.
+* host code using XCL HAL to read and write the AXI lite registers of the accelerator directly.
+* scripts to go through HLS -> RTL -> XO -> XCLBIN and for compiling the host code
+
 ## Requirements
 * Xilinx SDAccel 2017.4
 
