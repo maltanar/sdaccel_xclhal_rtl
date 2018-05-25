@@ -26,7 +26,7 @@ XO_SCRIPT := $(shell readlink -f tcl/gen_xo.tcl)
 KERNELXML_INPUT := $(shell readlink -f metadata/kernel_$(TESTCASE).xml)
 # arguments for xocc / xclbin generation
 XCLBIN_FREQ_OPTS := "0:$(XCLBIN_FREQ_MHZ)|1:$(XCLBIN_FREQ_MHZ)"
-XCLBIN_OPTIMIZE := quick
+XCLBIN_OPTIMIZE := 0
 XCLBIN_OUTPUT := $(BUILD_DIR)/$(TESTCASE)-$(MODE).xclbin
 # host application
 HOST_SRCS := $(shell readlink -f host/$(TESTCASE).cpp) $(shell readlink -f host/xclhal_utils.c)
