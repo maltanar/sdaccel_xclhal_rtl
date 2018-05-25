@@ -1,5 +1,7 @@
 # sdaccel_xclhal_rtl
 Examples for using the SDAccel XCL HAL library for interfacing RTL kernels.
+The XCL HAL library provides low-level access to designs running on the FPGA,
+such as reading and writing control/status registers directly from host code.
 
 ## Requirements
 * Xilinx SDAccel 2017.4
@@ -23,3 +25,6 @@ executable at build-reg2reg/host-hw to test.
 * metadata/ -- dummy kernel.xml files for SDAccel RTL kernel packaging
 * tcl/ -- scripts for HLS synthesis and SDAccel RTL kernel packaging
 
+## TODO
+* add memcpy example
+* support the hw_emu flow
