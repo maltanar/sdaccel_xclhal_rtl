@@ -41,7 +41,11 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	init("reg2reg.xclbin");
+	if(argc != 2) {
+		std::cout << "Usage: " << argv[0] << " <path_to_xclbin>" << endl;
+		return -1;
+	}
+	init(argv[1]);
 	// copied here from HLS-generated xreg2reg.h for convenience:
   // 0x00 : Control signals
   //        bit 0  - ap_start (Read/Write/COH)

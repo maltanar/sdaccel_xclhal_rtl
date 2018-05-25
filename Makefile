@@ -95,10 +95,13 @@ $(HOST_OUTPUT):
 
 all: $(XCLBIN_OUTPUT) $(HOST_OUTPUT)
 
+run: $(XCLBIN_OUTPUT) $(HOST_OUTPUT)
+	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(HOST_XCLHAL_LIB_PATH); $(HOST_OUTPUT) $(XCLBIN_OUTPUT)
+
 clean:
 	rm -rf $(BUILD_DIR)
 	
-.PHONY: hls xo xclbin host all clean
+.PHONY: hls xo xclbin host run all clean
 
 hls: $(HLS_OUTPUT)
 xo: $(XO_OUTPUT)

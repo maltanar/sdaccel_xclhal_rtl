@@ -16,8 +16,7 @@ to get the include folder /path/to/xilinx_kcu1500_dynamic_5_0/xbinst/runtime/pla
 
 3. Run "make all" in the root directory of this repository. This will take a while to complete.
 
-4. Ensure that $XILINX_OPENCL/runtime/platforms/xilinx_kcu1500_dynamic_5_0/driver is on LD_LIBRARY_PATH, then run the host
-executable at build-reg2reg/host-hw to test.
+4. Run "make run" to run the host application and run the test.
 
 ## Organization
 * hls/ -- HLS sources to generate example accelerators, packed later as RTL kernels
