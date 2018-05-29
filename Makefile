@@ -68,26 +68,26 @@ HOST_SRCS := $(shell readlink -f host/$(TESTCASE).cpp) $(shell readlink -f host/
 HOST_OUTPUT := $(BUILD_DIR)/host-$(MODE)
 EMCONFIG := $(BUILD_DIR)/emconfig.json
 ifeq ($(MODE),hw)
-	# use xclgemdrv for actual hardware
-	# TODO make sure that XILINX_OPENCL is defined
 	# remember to unzip the xclgemhal.zip on this path
 	HOST_XCLHAL_INCL_PATH := $(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver/include
 	HOST_DRV_LIB_PATH := $(XILINX_OPENCL)/runtime/lib/x86_64
 	HOST_XCLHAL_LIB_PATH := $(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver
+	# use xclgemdrv for actual hardware
 	HOST_XCLHAL_LIB_NAME := xclgemdrv
 	XOCC_OPTS := 
 	EMU_EXTRA_DEPENDS :=
 	CSR_BASE_ADDR := 0x1800000
+	ENVVAR_DEPENDS := envvar_ocl
 else ifeq ($(MODE),hw_emu)
-	# use the generic PCIe platform emulation driver
-	# TODO make sure that XILINX_SDX is defined
 	HOST_XCLHAL_INCL_PATH := $(XILINX_SDX)/runtime/driver/include
 	HOST_DRV_LIB_PATH := $(XILINX_SDX)/runtime/lib/x86_64
 	HOST_XCLHAL_LIB_PATH := $(XILINX_SDX)/data/emulation/hw_em/generic_pcie/driver
+	# use the generic PCIe platform emulation driver
 	HOST_XCLHAL_LIB_NAME := hw_em	
 	XOCC_OPTS := --save-temps -g
 	EMU_EXTRA_DEPENDS := $(EMCONFIG)
 	CSR_BASE_ADDR := 0x0
+	ENVVAR_DEPENDS := envvar_sdx
 endif
 
 HOST_CXX_OPTS := -std=c++11 -DCSR_BASE_ADDR=$(CSR_BASE_ADDR)
@@ -95,7 +95,17 @@ HOST_INCL_PATHS := -I$(HOST_XCLHAL_INCL_PATH) -I$(shell readlink -f host)
 HOST_LIB_PATHS := -L$(HOST_XCLHAL_LIB_PATH) -L$(HOST_DRV_LIB_PATH)
 HOST_LIBS := -lxilinxopencl -l$(HOST_XCLHAL_LIB_NAME) -lpthread -lrt -lstdc++
 
-.PHONY: hls xo xclbin host run all clean
+.PHONY: hls xo xclbin host run all clean envvar_sdx envvar_ocl
+
+envvar_sdx:
+ifndef XILINX_SDX
+	$(error XILINX_SDX is undefined)
+endif
+
+envvar_ocl:
+ifndef XILINX_OPENCL
+	$(error XILINX_OPENCL is undefined)
+endif
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -106,7 +116,7 @@ $(HLS_OUTPUT): $(BUILD_DIR)
 $(XO_OUTPUT): $(HLS_OUTPUT)
 	cd $(BUILD_DIR); vivado -mode batch -source $(XO_SCRIPT) -tclargs $(XO_OUTPUT) $(TESTCASE) $(HLS_OUTPUT) $(KERNELXML_INPUT)
 
-$(XCLBIN_OUTPUT): $(XO_OUTPUT)
+$(XCLBIN_OUTPUT): $(XO_OUTPUT) $(ENVVAR_DEPENDS)
 	cd $(BUILD_DIR); xocc --link $(XOCC_OPTS) --target $(MODE) --kernel_frequency $(XCLBIN_FREQ_OPTS) --optimize $(XCLBIN_OPTIMIZE) --platform $(PLATFORM) $(XO_OUTPUT) -o $(XCLBIN_OUTPUT)
 
 $(HOST_OUTPUT): $(BUILD_DIR)
