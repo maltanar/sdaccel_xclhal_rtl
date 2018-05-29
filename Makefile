@@ -77,7 +77,7 @@ ifeq ($(MODE),hw)
 	HOST_XCLHAL_LIB_NAME := xclgemdrv
 	XOCC_OPTS := 
 	EMU_EXTRA_DEPENDS :=
-        CSR_BASE_ADDR := 0x1800000
+	CSR_BASE_ADDR := 0x1800000
 else ifeq ($(MODE),hw_emu)
 	# use the generic PCIe platform emulation driver
 	# TODO make sure that XILINX_SDX is defined
@@ -87,13 +87,15 @@ else ifeq ($(MODE),hw_emu)
 	HOST_XCLHAL_LIB_NAME := hw_em	
 	XOCC_OPTS := --save-temps -g
 	EMU_EXTRA_DEPENDS := $(EMCONFIG)
-        CSR_BASE_ADDR := 0x0
+	CSR_BASE_ADDR := 0x0
 endif
 
 HOST_CXX_OPTS := -std=c++11 -DCSR_BASE_ADDR=$(CSR_BASE_ADDR)
 HOST_INCL_PATHS := -I$(HOST_XCLHAL_INCL_PATH) -I$(shell readlink -f host)
 HOST_LIB_PATHS := -L$(HOST_XCLHAL_LIB_PATH) -L$(HOST_DRV_LIB_PATH)
 HOST_LIBS := -lxilinxopencl -l$(HOST_XCLHAL_LIB_NAME) -lpthread -lrt -lstdc++
+
+.PHONY: hls xo xclbin host run all clean
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -120,8 +122,6 @@ run: $(XCLBIN_OUTPUT) $(HOST_OUTPUT) $(EMU_EXTRA_DEPENDS)
 
 clean:
 	rm -rf $(BUILD_DIR)
-	
-.PHONY: hls xo xclbin host run all clean
 
 hls: $(HLS_OUTPUT)
 xo: $(XO_OUTPUT)
