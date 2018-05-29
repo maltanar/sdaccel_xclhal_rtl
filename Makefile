@@ -66,17 +66,34 @@ XCLBIN_OUTPUT := $(BUILD_DIR)/$(TESTCASE)-$(MODE).xclbin
 # host application
 HOST_SRCS := $(shell readlink -f host/$(TESTCASE).cpp) $(shell readlink -f host/xclhal_utils.c)
 HOST_OUTPUT := $(BUILD_DIR)/host-$(MODE)
-# other options to pass to g++ for host app
-HOST_CXX_OPTS := -std=c++11
-# TODO make sure that XILINX_OPENCL is defined
-# host app include paths -- remember to unzip the xclgemhal.zip on this path
-HOST_XCLHAL_INCL_PATH := $(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver/include
+EMCONFIG := $(BUILD_DIR)/emconfig.json
+ifeq ($(MODE),hw)
+	# use xclgemdrv for actual hardware
+	# TODO make sure that XILINX_OPENCL is defined
+	# remember to unzip the xclgemhal.zip on this path
+	HOST_XCLHAL_INCL_PATH := $(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver/include
+	HOST_DRV_LIB_PATH := $(XILINX_OPENCL)/runtime/lib/x86_64
+	HOST_XCLHAL_LIB_PATH := $(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver
+	HOST_XCLHAL_LIB_NAME := xclgemdrv
+	XOCC_OPTS := 
+	EMU_EXTRA_DEPENDS :=
+        CSR_BASE_ADDR := 0x1800000
+else ifeq ($(MODE),hw_emu)
+	# use the generic PCIe platform emulation driver
+	# TODO make sure that XILINX_SDX is defined
+	HOST_XCLHAL_INCL_PATH := $(XILINX_SDX)/runtime/driver/include
+	HOST_DRV_LIB_PATH := $(XILINX_SDX)/runtime/lib/x86_64
+	HOST_XCLHAL_LIB_PATH := $(XILINX_SDX)/data/emulation/hw_em/generic_pcie/driver
+	HOST_XCLHAL_LIB_NAME := hw_em	
+	XOCC_OPTS := --save-temps -g
+	EMU_EXTRA_DEPENDS := $(EMCONFIG)
+        CSR_BASE_ADDR := 0x0
+endif
+
+HOST_CXX_OPTS := -std=c++11 -DCSR_BASE_ADDR=$(CSR_BASE_ADDR)
 HOST_INCL_PATHS := -I$(HOST_XCLHAL_INCL_PATH) -I$(shell readlink -f host)
-# host app lib paths and libs
-HOST_XCLHAL_LIB_PATH := "$(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver"
-HOST_DRV_LIB_PATH := "$(XILINX_OPENCL)/runtime/lib/x86_64"
 HOST_LIB_PATHS := -L$(HOST_XCLHAL_LIB_PATH) -L$(HOST_DRV_LIB_PATH)
-HOST_LIBS := -lxclgemdrv -lpthread -lrt -lstdc++
+HOST_LIBS := -lxilinxopencl -l$(HOST_XCLHAL_LIB_NAME) -lpthread -lrt -lstdc++
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -88,15 +105,18 @@ $(XO_OUTPUT): $(HLS_OUTPUT)
 	cd $(BUILD_DIR); vivado -mode batch -source $(XO_SCRIPT) -tclargs $(XO_OUTPUT) $(TESTCASE) $(HLS_OUTPUT) $(KERNELXML_INPUT)
 
 $(XCLBIN_OUTPUT): $(XO_OUTPUT)
-	cd $(BUILD_DIR); xocc --link --target $(MODE) --kernel_frequency $(XCLBIN_FREQ_OPTS) --optimize $(XCLBIN_OPTIMIZE) --platform $(PLATFORM) $(XO_OUTPUT) -o $(XCLBIN_OUTPUT)
+	cd $(BUILD_DIR); xocc --link $(XOCC_OPTS) --target $(MODE) --kernel_frequency $(XCLBIN_FREQ_OPTS) --optimize $(XCLBIN_OPTIMIZE) --platform $(PLATFORM) $(XO_OUTPUT) -o $(XCLBIN_OUTPUT)
 
-$(HOST_OUTPUT):
+$(HOST_OUTPUT): $(BUILD_DIR)
 	g++ $(HOST_CXX_OPTS) $(HOST_INCL_PATHS) $(HOST_LIB_PATHS) $(HOST_LIBS) $(HOST_SRCS) -o $(HOST_OUTPUT)
+
+$(EMCONFIG):
+	emconfigutil --platform $(PLATFORM) --nd 1 -s --od $(BUILD_DIR)
 
 all: $(XCLBIN_OUTPUT) $(HOST_OUTPUT)
 
-run: $(XCLBIN_OUTPUT) $(HOST_OUTPUT)
-	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(HOST_XCLHAL_LIB_PATH); $(HOST_OUTPUT) $(XCLBIN_OUTPUT)
+run: $(XCLBIN_OUTPUT) $(HOST_OUTPUT) $(EMU_EXTRA_DEPENDS)
+	LD_LIBRARY_PATH=$(HOST_DRV_LIB_PATH):$(HOST_XCLHAL_LIB_PATH) $(HOST_OUTPUT) $(XCLBIN_OUTPUT)
 
 clean:
 	rm -rf $(BUILD_DIR)
