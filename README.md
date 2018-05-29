@@ -24,6 +24,14 @@ to get the include folder /path/to/xilinx_kcu1500_dynamic_5_0/xbinst/runtime/pla
 
 4. Run "make run" to run the host application and run the test.
 
+## Experimental: hardware emulation flow
+*This part is under construction and does not yet work properly.*
+Run steps 3 and 4 of Quickstart with MODE=hw_emu:
+```
+MODE=hw_emu make all
+MODE=hw_emu make run
+```
+
 ## Organization
 * hls/ -- HLS sources to generate example accelerators, packed later as RTL kernels
 * host/ -- host code using the XCL HAL for device access
