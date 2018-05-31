@@ -93,7 +93,7 @@ else ifeq ($(MODE),hw_emu)
 	ENVVAR_DEPENDS := envvar_sdx
 endif
 
-HOST_CXX_OPTS := -std=c++11 -DCSR_BASE_ADDR=$(CSR_BASE_ADDR)
+HOST_CXX_OPTS := -std=c++11 -DCSR_BASE_ADDR=$(CSR_BASE_ADDR) -DFCLK_MHZ=$(XCLBIN_FREQ_MHZ)
 HOST_INCL_PATHS := -I$(HOST_XCLHAL_INCL_PATH) -I$(shell readlink -f host)
 HOST_LIB_PATHS := -L$(HOST_XCLHAL_LIB_PATH) -L$(HOST_DRV_LIB_PATH)
 HOST_LIBS := -lxilinxopencl -l$(HOST_XCLHAL_LIB_NAME) -lpthread -lrt -lstdc++
@@ -120,7 +120,7 @@ $(IP_OUTPUT): $(HLS_OUTPUT)
 	cd $(BUILD_DIR); vivado -mode batch -source $(IP_SCRIPT) -tclargs $(TESTCASE) $(HLS_OUTPUT) $(IP_OUTPUT)
 
 $(XO_OUTPUT): $(IP_OUTPUT)
-	cd $(BUILD_DIR); vivado -mode batch -source $(XO_SCRIPT) -tclargs $(XO_OUTPUT) $(TESTCASE) $(HLS_OUTPUT) $(KERNELXML_INPUT)
+	cd $(BUILD_DIR); vivado -mode batch -source $(XO_SCRIPT) -tclargs $(XO_OUTPUT) $(TESTCASE) $(IP_OUTPUT) $(KERNELXML_INPUT)
 
 $(XCLBIN_OUTPUT): $(XO_OUTPUT) $(ENVVAR_DEPENDS)
 	cd $(BUILD_DIR); xocc --link $(XOCC_OPTS) --target $(MODE) --kernel_frequency $(XCLBIN_FREQ_OPTS) --optimize $(XCLBIN_OPTIMIZE) --platform $(PLATFORM) $(XO_OUTPUT) -o $(XCLBIN_OUTPUT)
