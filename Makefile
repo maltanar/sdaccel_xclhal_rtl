@@ -39,7 +39,7 @@ TESTCASE ?= reg2reg
 # clock frequency targets, provided separately for HLS and the full bitfile
 HLS_CLK_NS ?= "10.0"
 XCLBIN_FREQ_MHZ ?= 100
-# SDAccel flow, currently only hw -- hw_emu is in the works
+# SDAccel flow, currently only hw (hw_emu does not yet work)
 MODE ?= hw
 # FPGA part name
 PART ?= "xcku115-flvb2104-2-e"
@@ -49,21 +49,24 @@ PLATFORM ?= "xilinx_kcu1500_dynamic_5_0"
 # internal Makefile variables, should be no need to modify these
 ROOT_DIR := $(shell readlink -f .)
 BUILD_DIR := $(ROOT_DIR)/build-$(TESTCASE)
-# arguments for HLS
+# variables for HLS synthesis
 HLS_INPUT := $(shell readlink -f hls/$(TESTCASE).cpp) 
 HLS_SCRIPT := $(shell readlink -f tcl/hls_syn.tcl)
 HLS_PROJNAME := hls_syn
 HLS_PROJDIR := $(BUILD_DIR)/$(HLS_PROJNAME)
-HLS_OUTPUT := $(HLS_PROJDIR)/sol1/impl/ip
-# arguments for the RTL kernel packager
+HLS_OUTPUT := $(HLS_PROJDIR)/sol1/syn/verilog
+# variables for the IP packager
+IP_SCRIPT := $(shell readlink -f tcl/package_ip.tcl)
+IP_OUTPUT := $(BUILD_DIR)/ip
+# variables for the RTL kernel packager
 XO_OUTPUT := $(BUILD_DIR)/$(TESTCASE).xo
 XO_SCRIPT := $(shell readlink -f tcl/gen_xo.tcl)
 KERNELXML_INPUT := $(shell readlink -f metadata/kernel_$(TESTCASE).xml)
-# arguments for xocc / xclbin generation
+# variables for xocc / xclbin generation
 XCLBIN_FREQ_OPTS := "0:$(XCLBIN_FREQ_MHZ)|1:$(XCLBIN_FREQ_MHZ)"
 XCLBIN_OPTIMIZE := 0
 XCLBIN_OUTPUT := $(BUILD_DIR)/$(TESTCASE)-$(MODE).xclbin
-# host application
+# variables for the host application
 HOST_SRCS := $(shell readlink -f host/$(TESTCASE).cpp) $(shell readlink -f host/xclhal_utils.c)
 HOST_OUTPUT := $(BUILD_DIR)/host-$(MODE)
 EMCONFIG := $(BUILD_DIR)/emconfig.json
@@ -76,7 +79,7 @@ ifeq ($(MODE),hw)
 	HOST_XCLHAL_LIB_NAME := xclgemdrv
 	XOCC_OPTS := 
 	EMU_EXTRA_DEPENDS :=
-	CSR_BASE_ADDR := 0x1800000
+	CSR_BASE_ADDR := 0x1800000 # TODO retrieve from address_map.xml
 	ENVVAR_DEPENDS := envvar_ocl
 else ifeq ($(MODE),hw_emu)
 	HOST_XCLHAL_INCL_PATH := $(XILINX_SDX)/runtime/driver/include
@@ -95,7 +98,7 @@ HOST_INCL_PATHS := -I$(HOST_XCLHAL_INCL_PATH) -I$(shell readlink -f host)
 HOST_LIB_PATHS := -L$(HOST_XCLHAL_LIB_PATH) -L$(HOST_DRV_LIB_PATH)
 HOST_LIBS := -lxilinxopencl -l$(HOST_XCLHAL_LIB_NAME) -lpthread -lrt -lstdc++
 
-.PHONY: hls xo xclbin host run all clean envvar_sdx envvar_ocl
+.PHONY: hls ip xo xclbin host run all clean envvar_sdx envvar_ocl
 
 envvar_sdx:
 ifndef XILINX_SDX
@@ -113,7 +116,10 @@ $(BUILD_DIR):
 $(HLS_OUTPUT): $(BUILD_DIR)
 	cd $(BUILD_DIR); vivado_hls -f $(HLS_SCRIPT) $(HLS_PROJNAME) $(HLS_INPUT) $(PART) $(HLS_CLK_NS) $(TESTCASE)
 
-$(XO_OUTPUT): $(HLS_OUTPUT)
+$(IP_OUTPUT): $(HLS_OUTPUT)
+	cd $(BUILD_DIR); vivado -mode batch -source $(IP_SCRIPT) -tclargs $(TESTCASE) $(HLS_OUTPUT) $(IP_OUTPUT)
+
+$(XO_OUTPUT): $(IP_OUTPUT)
 	cd $(BUILD_DIR); vivado -mode batch -source $(XO_SCRIPT) -tclargs $(XO_OUTPUT) $(TESTCASE) $(HLS_OUTPUT) $(KERNELXML_INPUT)
 
 $(XCLBIN_OUTPUT): $(XO_OUTPUT) $(ENVVAR_DEPENDS)
@@ -134,6 +140,8 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 hls: $(HLS_OUTPUT)
+ip: $(IP_OUTPUT)
 xo: $(XO_OUTPUT)
 xclbin: $(XCLBIN_OUTPUT)
 host: $(HOST_OUTPUT)
+
