@@ -44,8 +44,6 @@ xclDeviceHandle hDevice;
 // base address for user logic AXI lite
 const unsigned long long int csr_base = CSR_BASE_ADDR;
 const xclAddressSpace csr_addrspace = XCL_ADDR_KERNEL_CTRL; // XCL_ADDR_KERNEL_CTRL
-// base address for DRAM buffers on device memory
-const unsigned long long int dram_base = 0x000000000;
 // buffer for reading xclbin into host memory
 unsigned char *kernelbinary;
 
@@ -78,7 +76,7 @@ void init(const char * xclbin) {
   // open and get exclusive access to the device
   hDevice = xclOpen(0, "xcl.log", XCL_QUIET);
   // TODO hw_em does not yet support this call, removed for now
-  // xclLockDevice(hDevice);
+  xclLockDevice(hDevice);
   // load the xclbin contents into memory
 	int n_i0 = load_file_to_memory(xclbin, (char **) &kernelbinary);
 	assert(n_i0 >= 0);
@@ -88,7 +86,7 @@ void init(const char * xclbin) {
 
 void deinit() {
   // TODO hw_em does not yet support this call, removed for now
-  // xclUnlockDevice(hDevice);
+  xclUnlockDevice(hDevice);
   xclClose(hDevice);
   free(kernelbinary);
 }
@@ -120,18 +118,31 @@ void writeReg64(const uint64_t reg_offset, const uint64_t value) {
 
 void readDRAM(const uint64_t dram_offset, void * buf, const size_t nbytes) {
   // TODO hw_em in 2017.4 only seems to support legacy APIs for now; should move to Unmgd* variants when it supports them
-  size_t nret = xclCopyBufferDevice2Host(hDevice, buf, dram_offset, nbytes, 0);
-  assert(nret == nbytes);
-  // int nret = xclUnmgdPread(hDevice, 0, buf, nbytes, dram_base + dram_offset);
+  //size_t nret = xclCopyBufferDevice2Host(hDevice, buf, dram_offset, nbytes, 0);
+  //assert(nret == nbytes);
+  int nret = xclUnmgdPread(hDevice, 0, buf, nbytes, dram_offset);
+  printf("readDRAM %d bytes from addr %x\n", nbytes, dram_offset); 
   // xclUnmgd* does not seem to return number of read/written bytes; just <0 for errors
-  // assert(nret >= 0);
+  assert(nret >= 0);
 }
 
 void writeDRAM(const uint64_t dram_offset, const void * buf, const size_t nbytes) {
   // TODO hw_em in 2017.4 only seems to support legacy APIs for now; should move to Unmgd* variants when it supports them
-  size_t nret = xclCopyBufferHost2Device(hDevice, dram_offset, buf, nbytes, 0);
-  assert(nret == nbytes);
-  // int nret = xclUnmgdPwrite(hDevice, 0, buf, nbytes, dram_base + dram_offset);
+  //size_t nret = xclCopyBufferHost2Device(hDevice, dram_offset, buf, nblytes, 0);
+  //assert(nret == nbytes);
+  int nret = xclUnmgdPwrite(hDevice, 0, buf, nbytes, dram_offset);
+  printf("writeDRAM %d bytes to addr %x\n", nbytes, dram_offset); 
   // xclUnmgd* does not seem to return number of read/written bytes; just <0 for errors  
-  // assert(nret >= 0);
+  assert(nret >= 0);
+}
+
+uint64_t allocDRAM(const size_t bytes) {
+	// TODO this is a hal1 call -- should use the hal2 BO functions instead
+	// allocate memory from DRAM bank 0
+	return xclAllocDeviceBuffer2(hDevice, bytes, XCL_MEM_DEVICE_RAM, XCL_DEVICE_RAM_BANK0);
+}
+
+void freeDRAM(const uint64_t buffer) {
+	// TODO this is a hal1 call -- should use the hal2 BO functions instead
+	xclFreeDeviceBuffer(hDevice, buffer);
 }

@@ -51,7 +51,9 @@ void writeReg32(const uint64_t reg_offset, const uint32_t value);
 const uint64_t readReg64(const uint64_t reg_offset);
 void writeReg64(const uint64_t reg_offset, const uint64_t value);
 
-// copy buffers between host memory and device memory
+// (de)allocate/copy buffers between host memory and device memory
+uint64_t allocDRAM(const size_t bytes);
+void freeDRAM(const uint64_t buffer);
 void readDRAM(const uint64_t dram_offset, void * buf, const size_t nbytes);
 void writeDRAM(const uint64_t dram_offset, const void * buf, const size_t nbytes);
 
