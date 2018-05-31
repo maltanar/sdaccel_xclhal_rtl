@@ -39,6 +39,16 @@
 #include "xclhal_utils.h"
 
 // A very thin wrapper around XCL HAL calls for low-level device access
+// Quickstart:
+// ==============================================================================
+// 1. Call init(path_to_xclbin)
+// 2. Use readReg*/writeReg* to r/w AXI lite regs, *= 32 or 64 for reg bitwidth.
+// 3. Use allocDRAM to allocate DRAM buffers on-device.
+// 4. Use writeDRAM to copy from host to device DRAM buffers.
+// 5. Use readDRAM to copy from device to host DRAM buffers.
+// 6. Call freeDRAM to free DRAM buffers.
+// 7. Call deinit when done.
+
 
 xclDeviceHandle hDevice;
 // base address for user logic AXI lite
@@ -75,8 +85,12 @@ void init(const char * xclbin) {
   assert(xclProbe() >= 1);
   // open and get exclusive access to the device
   hDevice = xclOpen(0, "xcl.log", XCL_QUIET);
-  // TODO hw_em does not yet support this call, removed for now
   xclLockDevice(hDevice);
+  // set the clock frequency if FCLK_MHZ was defined
+#ifdef FCLK_MHZ  
+  const unsigned short targetFreqMHz[4] = {FCLK_MHZ, FCLK_MHZ, 0, 0};
+  xclReClock2(hDevice, 0, targetFreqMHz);
+#endif  
   // load the xclbin contents into memory
 	int n_i0 = load_file_to_memory(xclbin, (char **) &kernelbinary);
 	assert(n_i0 >= 0);
@@ -85,7 +99,6 @@ void init(const char * xclbin) {
 }
 
 void deinit() {
-  // TODO hw_em does not yet support this call, removed for now
   xclUnlockDevice(hDevice);
   xclClose(hDevice);
   free(kernelbinary);
