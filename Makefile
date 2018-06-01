@@ -72,15 +72,15 @@ HOST_OUTPUT := $(BUILD_DIR)/host-$(MODE)
 EMCONFIG := $(BUILD_DIR)/emconfig.json
 ifeq ($(MODE),hw)
 	# remember to unzip the xclgemhal.zip on this path
-	HOST_XCLHAL_INCL_PATH := $(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver/include
-	HOST_DRV_LIB_PATH := $(XILINX_OPENCL)/runtime/lib/x86_64
-	HOST_XCLHAL_LIB_PATH := $(XILINX_OPENCL)/runtime/platforms/$(PLATFORM)/driver
+	HOST_XCLHAL_INCL_PATH := $(XILINX_SDX)/runtime/driver/include
+	HOST_DRV_LIB_PATH := $(XILINX_SDX)/runtime/lib/x86_64
+	HOST_XCLHAL_LIB_PATH := $(XILINX_SDX)/platforms/$(PLATFORM)/sw/driver/gem
 	# use xclgemdrv for actual hardware
 	HOST_XCLHAL_LIB_NAME := xclgemdrv
 	XOCC_OPTS := 
 	EMU_EXTRA_DEPENDS :=
 	CSR_BASE_ADDR := 0x1800000 # TODO retrieve from address_map.xml
-	ENVVAR_DEPENDS := envvar_ocl
+	ENVVAR_DEPENDS := envvar_sdx
 else ifeq ($(MODE),hw_emu)
 	HOST_XCLHAL_INCL_PATH := $(XILINX_SDX)/runtime/driver/include
 	HOST_DRV_LIB_PATH := $(XILINX_SDX)/runtime/lib/x86_64
@@ -105,15 +105,10 @@ ifndef XILINX_SDX
 	$(error XILINX_SDX is undefined)
 endif
 
-envvar_ocl:
-ifndef XILINX_OPENCL
-	$(error XILINX_OPENCL is undefined)
-endif
-
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(HLS_OUTPUT): $(BUILD_DIR)
+$(HLS_OUTPUT): | $(BUILD_DIR)
 	cd $(BUILD_DIR); vivado_hls -f $(HLS_SCRIPT) $(HLS_PROJNAME) $(HLS_INPUT) $(PART) $(HLS_CLK_NS) $(TESTCASE)
 
 $(IP_OUTPUT): $(HLS_OUTPUT)
@@ -144,4 +139,4 @@ ip: $(IP_OUTPUT)
 xo: $(XO_OUTPUT)
 xclbin: $(XCLBIN_OUTPUT)
 host: $(HOST_OUTPUT)
-
+all: xclbin host
