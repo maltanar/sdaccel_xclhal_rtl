@@ -71,25 +71,16 @@ HOST_SRCS := $(shell readlink -f host/$(TESTCASE).cpp) $(shell readlink -f host/
 HOST_OUTPUT := $(BUILD_DIR)/host-$(MODE)
 EMCONFIG := $(BUILD_DIR)/emconfig.json
 ifeq ($(MODE),hw)
-	# remember to unzip the xclgemhal.zip on this path
 	HOST_XCLHAL_INCL_PATH := $(XILINX_SDX)/runtime/driver/include
 	HOST_DRV_LIB_PATH := $(XILINX_SDX)/runtime/lib/x86_64
 	HOST_XCLHAL_LIB_PATH := $(XILINX_SDX)/platforms/$(PLATFORM)/sw/driver/gem
-	# use xclgemdrv for actual hardware
 	HOST_XCLHAL_LIB_NAME := xclgemdrv
 	XOCC_OPTS := 
 	EMU_EXTRA_DEPENDS :=
-	CSR_BASE_ADDR := 0x1800000 # TODO retrieve from address_map.xml
-	ENVVAR_DEPENDS := envvar_sdx
-else ifeq ($(MODE),hw_emu)
-	HOST_XCLHAL_INCL_PATH := $(XILINX_SDX)/runtime/driver/include
-	HOST_DRV_LIB_PATH := $(XILINX_SDX)/runtime/lib/x86_64
-	HOST_XCLHAL_LIB_PATH := $(XILINX_SDX)/data/emulation/hw_em/generic_pcie/driver
-	# use the generic PCIe platform emulation driver
-	HOST_XCLHAL_LIB_NAME := hw_em	
-	XOCC_OPTS := --save-temps -g
-	EMU_EXTRA_DEPENDS := $(EMCONFIG)
-	CSR_BASE_ADDR := 0x0
+	CSR_BASE_ADDR := 0x1800000 
+	# TODO can retrieve the CSR_BASE_ADDR from address_map.xml -- something like this
+	# cat $(BUILD_DIR)/address_map.xml  | grep s_axi_control | tr ' ' '\n' | grep baseAddr | tr '=' '\n' | grep 0x
+	# all produced hw seems to use 0x1800000 for now so static def should be safe for a while
 	ENVVAR_DEPENDS := envvar_sdx
 endif
 
@@ -98,7 +89,7 @@ HOST_INCL_PATHS := -I$(HOST_XCLHAL_INCL_PATH) -I$(shell readlink -f host)
 HOST_LIB_PATHS := -L$(HOST_XCLHAL_LIB_PATH) -L$(HOST_DRV_LIB_PATH)
 HOST_LIBS := -lxilinxopencl -l$(HOST_XCLHAL_LIB_NAME) -lpthread -lrt -lstdc++
 
-.PHONY: hls ip xo xclbin host run all clean envvar_sdx envvar_ocl
+.PHONY: hls ip xo xclbin host run all clean envvar_sdx
 
 envvar_sdx:
 ifndef XILINX_SDX
