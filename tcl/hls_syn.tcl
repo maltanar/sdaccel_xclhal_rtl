@@ -58,7 +58,22 @@ config_compile -name_max_length 300
 # use 64-bit AXI MM addresses
 config_interface -m_axi_addr64
 
+# optionally prefix the RTL generated function names
+if {$argc > 8} {
+    set config_prefix [lindex $::argv 8]
+    puts "Prefixing RTL function names with: $config_prefix"
+    config_rtl -prefix "$config_prefix"
+}
+
 # synthesize
 create_clock -period $config_clkperiod -name default
 csynth_design
+
+# optionally export the IP in the desired format
+if {$argc > 7} {
+    set config_ip_format [lindex $::argv 7]
+    puts "Exporting IP in format: $config_ip_format"
+    export_design -format $config_ip_format
+}
+
 exit 0
