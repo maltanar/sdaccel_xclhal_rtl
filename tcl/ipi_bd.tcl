@@ -8,6 +8,8 @@ set krnl_name   [lindex $::argv 0]
 set path_to_hdl [lindex $::argv 1]
 set path_to_ip  [lindex $::argv 2]
 set proj_part   [lindex $::argv 3]
+set clkperiod   [lindex $::argv 4]
+set ip_format   [lindex $::argv 5]
 
 # Set the reference directory for source file relative paths (by default the value is script directory path)
 set origin_dir "."
@@ -240,13 +242,15 @@ launch_runs -jobs 4 {blockdesign_dmainout_0_0_synth_1 blockdesign_streamadd_0_0_
 make_wrapper -files [get_files blockdesign.bd] -import -fileset sources_1 -top
 
 # Synthesize toplevel
+set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} -value {-mode out_of_context} -objects [get_runs synth_1]
 launch_runs synth_1
 wait_on_run synth_1
 open_run synth_1 -name synth_1
 
 # Export EDIF netlist and stub
 file mkdir $path_to_ip
-write_verilog -mode synth_stub -force $path_to_ip/$krnl_name.v
+write_verilog -force -mode synth_stub $path_to_ip/$krnl_name.v
 write_checkpoint -force $path_to_ip/$krnl_name.dcp
+write_xdc -force $path_to_ip/$krnl_name.xdc
 
 close_project

@@ -56,7 +56,8 @@ HLS_PROJNAME := hls_syn
 HLS_PROJDIR := $(BUILD_DIR)/$(HLS_PROJNAME)
 HLS_OUTPUT := $(HLS_PROJDIR)/sol1/syn/verilog
 # variables for the IP packager
-IP_SCRIPT := $(shell readlink -f tcl/package_ip.tcl)
+HDL_IP_SCRIPT := $(shell readlink -f tcl/package_ip.tcl)
+DCP_IP_SCRIPT := $(shell readlink -f tcl/package_dcp.tcl)
 IP_OUTPUT := $(BUILD_DIR)/ip
 # variables for the Block Design assembler
 BD_SCRIPT := $(shell readlink -f tcl/ipi_bd.tcl)
@@ -111,7 +112,10 @@ else
 endif
 
 $(IP_OUTPUT): $(HLS_OUTPUT)
-	cd $(BUILD_DIR); vivado -mode batch -source $(IP_SCRIPT) -tclargs $(TESTCASE) $(HLS_OUTPUT) $(IP_OUTPUT)
+	cd $(BUILD_DIR); vivado -mode batch -source $(HDL_IP_SCRIPT) -tclargs $(TESTCASE) $(HLS_OUTPUT) $(IP_OUTPUT)
+ifeq ($(TESTCASE),streaminc)
+	cd $(BUILD_DIR); vivado -mode batch -source $(DCP_IP_SCRIPT) -tclargs $(TESTCASE) $(HLS_OUTPUT) $(IP_OUTPUT) $(PART)
+endif
 
 $(XO_OUTPUT): $(IP_OUTPUT)
 	cd $(BUILD_DIR); vivado -mode batch -source $(XO_SCRIPT) -tclargs $(XO_OUTPUT) $(TESTCASE) $(IP_OUTPUT) $(KERNELXML_INPUT)
