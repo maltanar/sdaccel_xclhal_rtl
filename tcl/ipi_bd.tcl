@@ -1,6 +1,6 @@
-if { $::argc != 4 } {
-    puts "ERROR: Program \"$::argv0\" requires 4 arguments!\n"
-    puts "Usage: $::argv0 <kernel_name> <in_path_to_hdl> <out_path_to_ip> <fpga_part>\n"
+if { $::argc != 5 } {
+    puts "ERROR: Program \"$::argv0\" requires 5 arguments!\n"
+    puts "Usage: $::argv0 <kernel_name> <in_path_to_hdl> <out_path_to_ip> <fpga_part> <frequency in MHz>\n"
     exit
 }
 
@@ -8,8 +8,9 @@ set krnl_name   [lindex $::argv 0]
 set path_to_hdl [lindex $::argv 1]
 set path_to_ip  [lindex $::argv 2]
 set proj_part   [lindex $::argv 3]
-set clkperiod   [lindex $::argv 4]
-set ip_format   [lindex $::argv 5]
+set clkfreqmhz  [lindex $::argv 4]
+
+puts $clkfreqmhz
 
 # Set the reference directory for source file relative paths (by default the value is script directory path)
 set origin_dir "."
@@ -101,6 +102,8 @@ set obj [get_filesets sim_1]
 # Proc to create BD
 proc cr_bd { parentCell } {
 
+  global clkfreqmhz
+
   # CHANGE DESIGN NAME HERE
   set design_name blockdesign
 
@@ -169,7 +172,7 @@ proc cr_bd { parentCell } {
 
   # Create clock and reset ports according to SDx spec
   create_bd_port -dir I -type clk ap_clk
-  set_property CONFIG.FREQ_HZ 250000000 [get_bd_ports ap_clk]
+  set_property CONFIG.FREQ_HZ [expr {$clkfreqmhz*1000000}] [get_bd_ports ap_clk]
   create_bd_port -dir I -type rst ap_rst_n
   set_property CONFIG.POLARITY ACTIVE_LOW [get_bd_ports ap_rst_n]
 

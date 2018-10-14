@@ -106,7 +106,7 @@ $(HLS_OUTPUT): | $(BUILD_DIR)
 ifeq ($(TESTCASE),streaminc)
 	cd $(BUILD_DIR); vivado_hls -f $(HLS_SCRIPT) $(HLS_PROJNAME)_dmainout $(HLS_INPUT) $(PART) $(HLS_CLK_NS) dmainout ip_catalog
 	cd $(BUILD_DIR); vivado_hls -f $(HLS_SCRIPT) $(HLS_PROJNAME)_streamadd $(HLS_INPUT) $(PART) $(HLS_CLK_NS) streamadd ip_catalog
-	cd $(BUILD_DIR); vivado -mode batch -source $(BD_SCRIPT) -tclargs $(TESTCASE) $(BUILD_DIR) $(HLS_OUTPUT) $(PART)
+	cd $(BUILD_DIR); vivado -mode batch -source $(BD_SCRIPT) -tclargs $(TESTCASE) $(BUILD_DIR) $(HLS_OUTPUT) $(PART) $(XCLBIN_FREQ_MHZ)
 else
 	cd $(BUILD_DIR); vivado_hls -f $(HLS_SCRIPT) $(HLS_PROJNAME) $(HLS_INPUT) $(PART) $(HLS_CLK_NS) $(TESTCASE)
 endif
