@@ -84,7 +84,7 @@ int main(int argc, char** argv)
   // read and print the accel status/control register, normally 4 (1 << 2) when idle
 	cout << "Read reg 0 (accel status/control), value = " << readReg32(0x0) << endl;
 	// prepare buffers on the host side and initialize with a known pattern
-	const int dram_elems = 64;
+	const int dram_elems = 1024;
 	const int dram_nbytes = dram_elems * sizeof(unsigned int);
   unsigned int *bufA = new unsigned int[dram_elems];
   unsigned int *bufB = new unsigned int[dram_elems];
@@ -124,9 +124,10 @@ int main(int argc, char** argv)
   writeReg32(0x00, 1);
   while(readReg32(0x00) & 0x2 != 0x2);
   // copy the FPGA-copied target buffer into the host and compare
+  cout << "Kernel execution done, processed " << dec << readReg32(0x28) << " words" << endl;
   memset(bufB, 0, dram_nbytes);
   readDRAM(dram_offs_dst, bufB, dram_nbytes);
-  cout << "Host -> device -> device -> host memory copy ";
+  cout << "Host -> device DDR -> device increment -> device increment -> device DDR -> Host computation ";
   int nerrors = 0;
   for(int i = 0; i < dram_elems; i++) {
      if(bufB[i] != bufA[i]+2) nerrors++;
